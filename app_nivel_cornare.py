@@ -1,25 +1,18 @@
-"""
-App básica de Streamlit — Nivel de ríos/quebradas (CORNARE / MARCO)
---------------------------------------------------------------------
-Cada estudiante debe cambiar, como mínimo, el código de la estación
-en el sidebar. Los valores de fecha y calidad también son ajustables.
-
-Para correrla:
-    streamlit run app_nivel_cornare.py
-"""
-
-import requests
-import pandas as pd
 import numpy as np
+import pandas as pd
+import requests
 import streamlit as st
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ------------------------------------------------------------------
-# Coordenadas por defecto (Institución Universitaria Pascual Bravo)
-# Se usan solo si la API no trae la latitud/longitud de la estación.
+# Configuración inicial y constantes
 # ------------------------------------------------------------------
+NOMBRE_ESTUDIANTE = "Valery Ochoa"
+CODIGO_ESTACION = "9"
+CALIDAD_DEFECTO = 1
+
 LAT_DEFECTO = 6.2773
 LON_DEFECTO = -75.4475
 
@@ -34,7 +27,7 @@ st.set_page_config(page_title="Nivel de estación — CORNARE", page_icon="🌊"
 
 
 # ------------------------------------------------------------------
-# Funciones de consulta
+# Funciones de consulta y procesamiento
 # ------------------------------------------------------------------
 def obtener_serie_nivel(codigo_estacion, desde, hasta, calidad=1, timeout=30):
     url = f"{API_BASE_URL}/{codigo_estacion}/nivel"
@@ -111,71 +104,87 @@ def calcular_indice_calidad(df):
 
 
 # ------------------------------------------------------------------
-# Sidebar — parámetros de la consulta (editables por cada estudiante)
+# Encabezado principal (vista centrada, sin sidebar)
 # ------------------------------------------------------------------
-st.sidebar.header("Parámetros de tu consulta")
-nombre_estudiante = st.sidebar.text_input("Nombre del estudiante", "Valery Ochoa")
-codigo_estacion = st.sidebar.text_input("Código de estación", "9")
-fecha_desde = st.sidebar.date_input("Desde", pd.to_datetime("2026-08-20")).strftime("%Y-%m-%d")
-fecha_hasta = st.sidebar.date_input("Hasta", pd.to_datetime("2026-08-25")).strftime("%Y-%m-%d")
-calidad = st.sidebar.selectbox("Calidad", [1, 0], index=0, help="1 = solo datos validados")
-consultar = st.sidebar.button("🔍 Consultar", type="primary")
-
 st.title("🌊 Nivel de ríos y quebradas — CORNARE")
-st.caption(f"Estudiante: **{nombre_estudiante}** · Estación: **{codigo_estacion}**")
+st.markdown(f"**Estudiante:** {NOMBRE_ESTUDIANTE} &nbsp;&nbsp;|&nbsp;&nbsp; **Estación:** {CODIGO_ESTACION}")
+st.divider()
 
 # ------------------------------------------------------------------
-# Consulta y procesamiento
+# Filtros de búsqueda en el cuerpo principal
+# ------------------------------------------------------------------
+col_filtro, col_boton = st.columns([3, 1])
+
+with col_filtro:
+    rango_fechas = st.date_input(
+        "Selecciona el rango de fechas:",
+        value=(pd.to_datetime("2026-08-20"), pd.to_datetime("2026-08-25")),
+        format="YYYY/MM/DD",
+    )
+
+with col_boton:
+    st.write("##")  # Espaciado para alinear el botón con el campo de texto
+    consultar = st.button("🔍 Consultar", type="primary", use_container_width=True)
+
+# ------------------------------------------------------------------
+# Consulta y visualización de datos
 # ------------------------------------------------------------------
 if consultar:
-    with st.spinner("Consultando la API..."):
-        datos_crudos, error = obtener_serie_nivel(codigo_estacion, fecha_desde, fecha_hasta, calidad)
+    if isinstance(rango_fechas, tuple) and len(rango_fechas) == 2:
+        fecha_desde = rango_fechas[0].strftime("%Y-%m-%d")
+        fecha_hasta = rango_fechas[1].strftime("%Y-%m-%d")
 
-    if error:
-        st.error(f"❌ {error}")
-    else:
-        registros = obtener_todas_las_paginas(datos_crudos)
+        with st.spinner("Consultando la API de CORNARE..."):
+            datos_crudos, error = obtener_serie_nivel(CODIGO_ESTACION, fecha_desde, fecha_hasta, CALIDAD_DEFECTO)
 
-        if not registros:
-            st.warning("No hay registros para esta estación y rango de fechas. Prueba otro código u otro rango.")
+        if error:
+            st.error(f"❌ {error}")
         else:
-            df = pd.DataFrame(registros)
-            df = df.rename(columns={LLAVE_FECHA: "fecha", LLAVE_VALOR: "nivel"})
-            df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-            df["nivel"] = pd.to_numeric(df["nivel"], errors="coerce")
-            df = df.dropna(subset=["fecha", "nivel"]).sort_values("fecha").reset_index(drop=True)
+            registros = obtener_todas_las_paginas(datos_crudos)
 
-            lat, lon, coords_reales = detectar_coordenadas(datos_crudos)
-            indice_calidad, huecos, n_outliers = calcular_indice_calidad(df)
+            if not registros:
+                st.warning("No hay registros para esta estación y rango de fechas. Prueba otro rango.")
+            else:
+                df = pd.DataFrame(registros)
+                df = df.rename(columns={LLAVE_FECHA: "fecha", LLAVE_VALOR: "nivel"})
+                df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+                df["nivel"] = pd.to_numeric(df["nivel"], errors="coerce")
+                df = df.dropna(subset=["fecha", "nivel"]).sort_values("fecha").reset_index(drop=True)
 
-            # --- Métricas principales ---
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Lecturas", len(df))
-            col2.metric("Nivel promedio", f"{df['nivel'].mean():.2f}")
-            col3.metric("Índice de calidad", f"{indice_calidad} / 100")
-            col4.metric("Outliers detectados", n_outliers)
+                lat, lon, coords_reales = detectar_coordenadas(datos_crudos)
+                indice_calidad, huecos, n_outliers = calcular_indice_calidad(df)
 
-            # --- Gráfico de la serie ---
-            st.subheader("Serie de nivel")
-            st.line_chart(df.set_index("fecha")["nivel"])
+                st.markdown("---")
 
-            # --- Mapa de la estación ---
-            st.subheader("Ubicación de la estación")
-            if not coords_reales:
-                st.caption("Guarne, Quebrada La Brizuela  (Red Agua - Cód. 9)")
-            st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=10)
+                # --- Métricas principales ---
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Lecturas", len(df))
+                m2.metric("Nivel promedio", f"{df['nivel'].mean():.2f}")
+                m3.metric("Índice de calidad", f"{indice_calidad} / 100")
+                m4.metric("Outliers detectados", n_outliers)
 
-            # --- Detalle de calidad ---
-            with st.expander("Detalle del índice de calidad"):
-                st.write(f"- Huecos de reporte detectados: **{huecos}**")
-                st.write(f"- Outliers (IQR + nivel negativo): **{n_outliers}** de {len(df)} lecturas")
-                st.write("El índice combina completitud de la serie (70%) y proporción de datos sin outliers (30%).")
+                # --- Gráfico de la serie ---
+                st.subheader("Serie de nivel")
+                st.line_chart(df.set_index("fecha")["nivel"])
 
-            # --- Tabla y descarga ---
-            with st.expander("Ver datos crudos"):
-                st.dataframe(df, use_container_width=True)
+                # --- Mapa de la estación ---
+                st.subheader("Ubicación de la estación")
+                if not coords_reales:
+                    st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
+                st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=10)
 
-            csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{codigo_estacion}.csv", mime="text/csv")
+                # --- Detalles y descargas ---
+                with st.expander("Detalle del índice de calidad"):
+                    st.write(f"- Huecos de reporte detectados: **{huecos}**")
+                    st.write(f"- Outliers (IQR + nivel negativo): **{n_outliers}** de {len(df)} lecturas")
+                    st.write("El índice combina completitud de la serie (70%) y proporción de datos sin outliers (30%).")
+
+                with st.expander("Ver datos crudos"):
+                    st.dataframe(df, use_container_width=True)
+
+                csv = df.to_csv(index=False).encode("utf-8")
+                st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv", mime="text/csv")
+    else:
+        st.warning("Por favor, selecciona una fecha inicial y una fecha final completas.")
 else:
-    st.info("Ajusta los parámetros en el sidebar y presiona **Consultar**.")
+    st.info("Selecciona el rango de fechas deseado y presiona **Consultar**.")
