@@ -167,11 +167,60 @@ if consultar:
                 st.subheader("Serie de nivel")
                 st.line_chart(df.set_index("fecha")["nivel"])
 
-                # --- Mapa de la estación ---
-                st.subheader("Ubicación de la estación")
+               # ------------------------------------------------------------------
+                # Ubicación de la estación e Imágenes
+                # ------------------------------------------------------------------
+                st.subheader("📍 Ubicación y entorno de la estación")
+                
                 if not coords_reales:
                     st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
-                st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=10)
+                
+                # Lista con las rutas locales de tus imágenes
+                lista_imagenes = [
+                    "imagenes/img1.png",  
+                    "imagenes/img2.png",
+                    "imagenes/img3.png",
+                    "imagenes/img4.png",
+                ]
+                
+                # Inicializar la imagen actual en session_state si no existe
+                if "img_idx" not in st.session_state:
+                    st.session_state.img_idx = 0
+                
+                col_mapa, col_galeria = st.columns([1, 1])
+                
+                with col_mapa:
+                    st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=12)
+                
+                with col_galeria:
+                    # Muestra la imagen seleccionada sin títulos
+                    st.image(
+                        lista_imagenes[st.session_state.img_idx], use_container_width=True
+                    )
+                
+                    # Botones de navegación para deslizar la galería
+                    c_izq, c_conteo, c_der = st.columns([1, 2, 1])
+                
+                    with c_izq:
+                        if st.button("◀", key="prev_img", use_container_width=True):
+                            st.session_state.img_idx = (st.session_state.img_idx - 1) % len(
+                                lista_imagenes
+                            )
+                            st.rerun()
+                
+                    with c_conteo:
+                        # Indicador numérico simple para la galería (ej: 1 / 4)
+                        st.markdown(
+                            f"<h5 style='text-align: center; color: gray;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</h5>",
+                            unsafe_allow_html=True,
+                        )
+                
+                    with c_der:
+                        if st.button("▶", key="next_img", use_container_width=True):
+                            st.session_state.img_idx = (st.session_state.img_idx + 1) % len(
+                                lista_imagenes
+                            )
+                            st.rerun()
 
                 # --- Detalles y descargas ---
                 with st.expander("Detalle del índice de calidad"):
