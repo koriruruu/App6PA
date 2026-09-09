@@ -28,7 +28,7 @@ CANDIDATOS_LON = ["lng", "lon", "longitude", "longitud"]
 st.set_page_config(page_title="MARCO 2.0 — Monitoreo de Ríos", page_icon="🌿", layout="wide")
 
 # ------------------------------------------------------------------
-# Estilos CSS Personalizados (Gama de Verdes Ambiental - Sin tonos café)
+# Estilos CSS Personalizados (Gama de Verdes Ambiental)
 # ------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -103,17 +103,8 @@ st.markdown("""
         font-weight: bold;
         color: #A5D6A7;
     }
-    /* Contenedor unificado para la barra de búsqueda */
-    .search-box-container {
-        background-color: #FFFFFF;
-        padding: 18px 22px;
-        border-radius: 12px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
-        border: 1px solid #E0E7E1;
-        margin-bottom: 25px;
-    }
 
-    /* Personalización del botón primario (remueve el color rojo por defecto) */
+    /* Personalización del botón primario (sustituye el rojo) */
     div.stButton > button[kind="primary"] {
         background-color: var(--verde-oscuro) !important;
         color: #FFFFFF !important;
@@ -230,24 +221,19 @@ with col_titulo:
     """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Barra de Filtro de Búsqueda (Estilo Integrado)
+# Barra de Filtro de Búsqueda
 # ------------------------------------------------------------------
-with st.container():
-    st.markdown('<div class="search-box-container">', unsafe_allow_html=True)
-    
-    col_fechas, col_btn = st.columns([3.8, 1.2], vertical_alignment="bottom")
-    
-    with col_fechas:
-        rango_fechas = st.date_input(
-            "📅 Selecciona el Rango de Fechas para Consulta:",
-            value=(pd.to_datetime("2026-08-20"), pd.to_datetime("2026-08-25")),
-            format="YYYY/MM/DD",
-        )
-        
-    with col_btn:
-        consultar = st.button("🔍 Consultar Estación", type="primary", use_container_width=True)
-        
-    st.markdown('</div>', unsafe_allow_html=True)
+col_fechas, col_btn = st.columns([3.8, 1.2], vertical_alignment="bottom")
+
+with col_fechas:
+    rango_fechas = st.date_input(
+        "📅 Selecciona el Rango de Fechas para Consulta:",
+        value=(pd.to_datetime("2026-08-20"), pd.to_datetime("2026-08-25")),
+        format="YYYY/MM/DD",
+    )
+
+with col_btn:
+    consultar = st.button("🔍 Consultar Estación", type="primary", use_container_width=True)
 
 # Manejo de consulta
 if consultar:
@@ -286,7 +272,7 @@ if consultar:
                 st.session_state["error"] = None
 
 # ------------------------------------------------------------------
-# Renderizado Dashboard principal (Grid Tipo MARCO)
+# Renderizado Dashboard principal
 # ------------------------------------------------------------------
 if st.session_state.get("error"):
     st.error(f"❌ {st.session_state['error']}")
@@ -302,13 +288,13 @@ elif st.session_state.get("df") is not None:
 
     st.markdown("---")
 
-    # Fila Principal: Mapa, Galería y Tarjeta Promedio (Estilo Web MARCO)
+    # Fila Principal: Mapa, Galería y Tarjeta Promedio
     c_map, c_galeria, c_info = st.columns([1.2, 1.2, 0.8])
 
     with c_map:
         st.markdown("**📌 Ubicación Geográfica**")
         st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=12)
-        st.caption("Latitud, Longitud: " + f"{lat}, {lon}")
+        st.caption(f"Latitud, Longitud: {lat}, {lon}")
 
     with c_galeria:
         st.markdown("**📷 Desliza para ver la ubicación física del sensor**")
@@ -335,7 +321,7 @@ elif st.session_state.get("df") is not None:
                 st.session_state.img_idx = (st.session_state.img_idx - 1) % len(lista_imagenes)
                 st.rerun()
         with b_cnt:
-            st.markdown(f"<p style='text-align:center; color:#4E3629; font-weight:bold;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; color:#1B5E20; font-weight:bold;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</p>", unsafe_allow_html=True)
         with b_der:
             if st.button("▶", key="next_img", use_container_width=True):
                 st.session_state.img_idx = (st.session_state.img_idx + 1) % len(lista_imagenes)
