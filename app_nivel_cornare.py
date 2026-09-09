@@ -583,3 +583,89 @@ elif st.session_state.get("df") is not None:
 
 else:
     st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
+
+# ------------------------------------------------------------------
+# Pie de Página Institucional (Estilo MARCO / CORNARE)
+# ------------------------------------------------------------------
+st.markdown("---")
+st.markdown(
+    """
+<style>
+    .footer-container {
+        background-color: #1E4D2B;
+        color: #FFFFFF;
+        padding: 30px 25px;
+        border-radius: 12px;
+        margin-top: 30px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .footer-col {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    .footer-title {
+        font-weight: bold;
+        font-size: 15px;
+        color: #A5D6A7;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .footer-link {
+        color: #C8E6C9 !important;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .footer-link:hover {
+        text-decoration: underline;
+        color: #FFFFFF !important;
+    }
+    .footer-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        margin-top: 20px;
+        padding-top: 15px;
+        font-size: 12px;
+        color: #A5D6A7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+
+<div class="footer-container">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px;">
+        <!-- Columna 1: Proyecto y Desarrollador -->
+        <div style="flex: 1; min-width: 250px;" class="footer-col">
+            <div class="footer-title">🌿 MARCO 2.0 — Proyecto Académico</div>
+            <p style="margin: 0 0 5px 0;"><b>Desarrollado por:</b> Valery Ochoa Pontón</p>
+            <p style="margin: 0 0 5px 0;"><b>Programa:</b> Ingeniería de Software (7.° Semestre)</p>
+            <p style="margin: 0 0 5px 0;"><b>Institución:</b> Institución Universitaria Pascual Bravo</p>
+            <p style="margin: 0;"><b>GitHub:</b> <a class="footer-link" href="https://github.com/koriruruu" target="_blank">@koriruruu</a></p>
+        </div>
+        
+        <!-- Columna 2: Detalles de la Asignatura -->
+        <div style="flex: 1; min-width: 250px;" class="footer-col">
+            <div class="footer-title">📚 Información Académica</div>
+            <p style="margin: 0 0 5px 0;"><b>Asignatura:</b> Programación Avanzada</p>
+            <p style="margin: 0 0 5px 0;"><b>Docente:</b> Carlos Mario Correa Torres</p>
+            <p style="margin: 0 0 5px 0;"><b>Fecha de Entrega:</b> 9 de Septiembre de 2026</p>
+            <p style="margin: 0;"><b>Contacto:</b> <a class="footer-link" href="mailto:valery.ochoa044@pascualbravo.edu.co">valery.ochoa044@pascualbravo.edu.co</a></p>
+        </div>
+        
+        <!-- Columna 3: Entidad y Fuentes -->
+        <div style="flex: 1; min-width: 250px;" class="footer-col">
+            <div class="footer-title">🏛️ Entidad y Datos</div>
+            <p style="margin: 0 0 5px 0;"><b>Fuente de Datos:</b> API Oficial CORNARE</p>
+            <p style="margin: 0 0 5px 0;"><b>Sistema Originario:</b> MARCO (Monitoreo Ambiental Regional de Cornare)</p>
+            <p style="margin: 0;"><b>Ubicación:</b> Quebrada La Brizuela, Guarne, Antioquia</p>
+        </div>
+    </div>
+    
+    <div class="footer-divider">
+        <div>© 2026 MARCO 2.0 — Monitoreo de Ríos y Quebradas en Tiempo Real. Todos los derechos reservados.</div>
+        <div>I.U. Pascual Bravo • Medellín, Colombia</div>
+    </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
