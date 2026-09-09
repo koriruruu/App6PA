@@ -104,7 +104,7 @@ st.markdown("""
         color: #A5D6A7;
     }
 
-    /* Personalización del botón primario (sustituye el rojo) */
+    /* Personalización del botón primario */
     div.stButton > button[kind="primary"] {
         background-color: var(--verde-oscuro) !important;
         color: #FFFFFF !important;
@@ -196,6 +196,39 @@ def calcular_indice_calidad(df):
     return round(indice, 1), int(huecos), int(es_outlier.sum())
 
 
+def obtener_estado_semaforo(nivel_max, nivel_actual):
+    UMBRAL_PREVENCION = 50.0
+    UMBRAL_ALERTA = 80.0
+
+    if nivel_max >= UMBRAL_ALERTA:
+        return {
+            "color": "#FFEBEE",
+            "borde": "#D32F2F",
+            "texto_color": "#C62828",
+            "icono": "🚨",
+            "titulo": "ALERTA ROJA — Riesgo de Desbordamiento",
+            "mensaje": f"El nivel máximo registrado ({nivel_max:.1f} cm) ha superado el umbral crítico de {UMBRAL_ALERTA} cm. Se recomienda activar protocolos de monitoreo continuo en comunidades ribereñas.",
+        }
+    elif nivel_max >= UMBRAL_PREVENCION:
+        return {
+            "color": "#FFFDE7",
+            "borde": "#FBC02D",
+            "texto_color": "#F57F17",
+            "icono": "⚠️",
+            "titulo": "ALERTA AMARILLA — Nivel en Incremento",
+            "mensaje": f"El nivel ha alcanzado los {nivel_max:.1f} cm, superando el nivel de prevención ({UMBRAL_PREVENCION} cm). Mantener observación por posibles precipitaciones en la cuenca alta de Guarne.",
+        }
+    else:
+        return {
+            "color": "#E8F5E9",
+            "borde": "#2E7D32",
+            "texto_color": "#1B5E20",
+            "icono": "✅",
+            "titulo": "ESTADO VERDE — Nivel Normal",
+            "mensaje": f"La corriente se mantiene dentro del cauce habitualmente seguro. Nivel actual en {nivel_actual:.1f} cm y máximo registrado en {nivel_max:.1f} cm.",
+        }
+
+
 # ------------------------------------------------------------------
 # Encabezado Web con Logo y Título
 # ------------------------------------------------------------------
@@ -272,84 +305,6 @@ if consultar:
                 st.session_state["error"] = None
 
 # ------------------------------------------------------------------
-# Función del Semáforo Hidrológico (Quebrada La Brizuela)
-# ------------------------------------------------------------------
-def obtener_estado_semaforo(nivel_max, nivel_actual):
-    # Umbrales ajustados para la estación de la Quebrada La Brizuela (cm)
-    UMBRAL_PREVENCION = 50.0
-    UMBRAL_ALERTA = 80.0
-
-    if nivel_max >= UMBRAL_ALERTA:
-        return {
-            "color": "#FFEBEE",
-            "borde": "#D32F2F",
-            "texto_color": "#C62828",
-            "icono": "🚨",
-            "titulo": "ALERTA ROJA — Riesgo de Desbordamiento",
-            "mensaje": f"El nivel máximo registrado ({nivel_max:.1f} cm) ha superado el umbral crítico de {UMBRAL_ALERTA} cm. Se recomienda activar protocolos de monitoreo continuo en comunidades ribereñas.",
-        }
-    elif nivel_max >= UMBRAL_PREVENCION:
-        return {
-            "color": "#FFFDE7",
-            "borde": "#FBC02D",
-            "texto_color": "#F57F17",
-            "icono": "⚠️",
-            "titulo": "ALERTA AMARILLA — Nivel en Incremento",
-            "mensaje": f"El nivel ha alcanzado los {nivel_max:.1f} cm, superando el nivel de prevención ({UMBRAL_PREVENCION} cm). Mantener observación por posibles precipitaciones en la cuenca alta de Guarne.",
-        }
-    else:
-        return {
-            "color": "#E8F5E9",
-            "borde": "#2E7D32",
-            "texto_color": "#1B5E20",
-            "icono": "✅",
-            "titulo": "ESTADO VERDE — Nivel Normal",
-            "mensaje": f"La corriente se mantiene dentro del cauce habitualmente seguro. Nivel actual en {nivel_actual:.1f} cm y máximo registrado en {nivel_max:.1f} cm.",
-        }
-
-        # ------------------------------------------------------------------
-        # Cálculo de Tendencia y Estado del Flujo
-        # ------------------------------------------------------------------
-        if len(df) >= 2:
-            diferencia = df["nivel"].iloc[-1] - df["nivel"].iloc[-2]
-            if diferencia > 1.5:
-                estado_flujo = "📈 Creciente (En ascenso)"
-                color_flujo = "#C62828"  # Rojo / Alerta
-            elif diferencia < -1.5:
-                estado_flujo = "📉 Recesión (Descendiendo)"
-                color_flujo = "#1565C0"  # Azul / Estable
-            else:
-                estado_flujo = "➡️ Estable (Sin variaciones)"
-                color_flujo = "#2E7D32"  # Verde / Normal
-            var_texto = f"{diferencia:+.1f} cm respecto a lectura previa"
-        else:
-            estado_flujo = "➡️ Estable"
-            color_flujo = "#2E7D32"
-            var_texto = "Sin suficientes datos"
-
-        # Tarjeta 1: Nivel Promedio
-        st.markdown(
-            f"""
-        <div class="card-metric" style="margin-bottom: 12px;">
-            <div style="font-size:13px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
-            <div class="card-metric-val">{df['nivel'].mean():.1f} cm</div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
-        # Tarjeta 2: Tendencia / Comportamiento del Flujo (Debajo del Promedio)
-        st.markdown(
-            f"""
-        <div style="background-color: #FFFFFF; border: 1px solid #E0E7E1; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-            <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#555; font-weight:600;">Comportamiento Reciente</div>
-            <div style="font-size:16px; font-weight:bold; color:{color_flujo}; margin-top:5px;">{estado_flujo}</div>
-            <div style="font-size:12px; color:#777; margin-top:3px;">{var_texto}</div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
-# ------------------------------------------------------------------
 # Renderizado Dashboard principal
 # ------------------------------------------------------------------
 if st.session_state.get("error"):
@@ -382,7 +337,7 @@ elif st.session_state.get("df") is not None:
         unsafe_allow_html=True,
     )
 
-    # Fila Principal: Mapa, Galería y Tarjeta Promedio
+    # Fila Principal: Mapa, Galería y Tarjetas
     c_map, c_galeria, c_info = st.columns([1.2, 1.2, 0.8])
 
     with c_map:
@@ -412,9 +367,7 @@ elif st.session_state.get("df") is not None:
         b_izq, b_cnt, b_der = st.columns([1, 2, 1])
         with b_izq:
             if st.button("◀", key="prev_img", use_container_width=True):
-                st.session_state.img_idx = (
-                    st.session_state.img_idx - 1
-                ) % len(lista_imagenes)
+                st.session_state.img_idx = (st.session_state.img_idx - 1) % len(lista_imagenes)
                 st.rerun()
         with b_cnt:
             st.markdown(
@@ -423,12 +376,11 @@ elif st.session_state.get("df") is not None:
             )
         with b_der:
             if st.button("▶", key="next_img", use_container_width=True):
-                st.session_state.img_idx = (
-                    st.session_state.img_idx + 1
-                ) % len(lista_imagenes)
+                st.session_state.img_idx = (st.session_state.img_idx + 1) % len(lista_imagenes)
                 st.rerun()
 
     with c_info:
+        # Tarjeta 1: Info Estación
         st.markdown(
             f"""
         <div class="card-info">
@@ -440,21 +392,52 @@ elif st.session_state.get("df") is not None:
             unsafe_allow_html=True,
         )
 
+        # Tarjeta 2: Nivel Promedio
         st.markdown(
             f"""
-        <div class="card-metric">
-            <div style="font-size:14px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
+        <div class="card-metric" style="margin-bottom: 12px;">
+            <div style="font-size:13px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
             <div class="card-metric-val">{df['nivel'].mean():.1f} cm</div>
         </div>
         """,
             unsafe_allow_html=True,
         )
 
-    # Fila Secundaria: Gráfico y Métricas de Calidad
+        # Cálculo dinámico de tendencia
+        if len(df) >= 2:
+            diferencia = df["nivel"].iloc[-1] - df["nivel"].iloc[-2]
+            if diferencia > 1.5:
+                estado_flujo = "📈 Creciente (En ascenso)"
+                color_flujo = "#C62828"
+            elif diferencia < -1.5:
+                estado_flujo = "📉 Recesión (Descendiendo)"
+                color_flujo = "#1565C0"
+            else:
+                estado_flujo = "➡️ Estable (Sin variaciones)"
+                color_flujo = "#2E7D32"
+            var_texto = f"{diferencia:+.1f} cm respecto a lectura previa"
+        else:
+            estado_flujo = "➡️ Estable"
+            color_flujo = "#2E7D32"
+            var_texto = "Sin suficientes datos"
+
+        # Tarjeta 3: Comportamiento Reciente (Debajo del Promedio)
+        st.markdown(
+            f"""
+        <div style="background-color: #FFFFFF; border: 1px solid #E0E7E1; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+            <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#555; font-weight:600;">Comportamiento Reciente</div>
+            <div style="font-size:15px; font-weight:bold; color:{color_flujo}; margin-top:5px;">{estado_flujo}</div>
+            <div style="font-size:11px; color:#777; margin-top:3px;">{var_texto}</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+    # Fila Secundaria: Gráfico y Métricas
     st.markdown("### 📈 Nivel Corriente de Agua")
     st.line_chart(df.set_index("fecha")["nivel"], color="#1E4D2B")
 
-    # Métricas adicionales incluyendo Máximo y Mínimo del periodo
+    # Métricas adicionales de resumen
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Última Lectura", f"{nivel_actual:.1f} cm")
     m2.metric("Nivel Máximo", f"{nivel_maximo:.1f} cm")
@@ -472,6 +455,4 @@ elif st.session_state.get("df") is not None:
         )
 
 else:
-    st.info(
-        "Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**."
-    )
+    st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
