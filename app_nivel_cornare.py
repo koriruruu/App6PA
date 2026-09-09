@@ -1,8 +1,10 @@
+import os
 import numpy as np
 import pandas as pd
 import requests
 import streamlit as st
 import urllib3
+from PIL import Image
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -23,11 +25,79 @@ LLAVE_VALOR = "level"
 CANDIDATOS_LAT = ["lat", "latitude", "latitud"]
 CANDIDATOS_LON = ["lng", "lon", "longitude", "longitud"]
 
-st.set_page_config(page_title="Nivel de estación — CORNARE", page_icon="🌊", layout="wide")
+st.set_page_config(page_title="MARCO 2.0 — Monitoreo de Ríos", page_icon="🌿", layout="wide")
+
+# ------------------------------------------------------------------
+# Estilos CSS Personalizados (Verde Oscuro, Café y Diseño Dashboard)
+# ------------------------------------------------------------------
+st.markdown("""
+<style>
+    /* Estilos globales y paleta de colores */
+    :root {
+        --verde-oscuro: #1E4D2B;
+        --verde-principal: #2E7D32;
+        --cafe-tierra: #4E3629;
+        --fondo-gris: #F4F6F4;
+    }
+    
+    .stApp {
+        background-color: #F8F9F8;
+    }
+
+    /* Barra Superior de Navegación */
+    .nav-bar {
+        background-color: var(--verde-oscuro);
+        padding: 12px 24px;
+        border-radius: 10px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    
+    .nav-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #FFFFFF;
+        margin: 0;
+    }
+    
+    .nav-sub {
+        font-size: 13px;
+        color: #C8E6C9;
+    }
+
+    /* Tarjetas tipo Dashboard */
+    .card-info {
+        background-color: #FFFFFF;
+        border-left: 5px solid var(--verde-principal);
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        margin-bottom: 10px;
+    }
+    
+    .card-metric {
+        background-color: var(--verde-oscuro);
+        color: white;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    
+    .card-metric-val {
+        font-size: 32px;
+        font-weight: bold;
+        color: #A5D6A7;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------------
-# Funciones de consulta y procesamiento
+# Funciones de consulta
 # ------------------------------------------------------------------
 def obtener_serie_nivel(codigo_estacion, desde, hasta, calidad=1, timeout=30):
     url = f"{API_BASE_URL}/{codigo_estacion}/nivel"
@@ -102,35 +172,52 @@ def calcular_indice_calidad(df):
 
 
 # ------------------------------------------------------------------
-# Encabezado principal
+# Encabezado Web con Logo y Título
 # ------------------------------------------------------------------
-st.title("🌊 Nivel de ríos y quebradas — CORNARE")
-st.markdown(f"**Estudiante:** {NOMBRE_ESTUDIANTE} &nbsp;&nbsp;|&nbsp;&nbsp; **Estación:** {CODIGO_ESTACION}")
-st.divider()
+col_logo, col_titulo = st.columns([1, 4])
+
+with col_logo:
+    # Espacio asignado para tu logo local. Si la foto 'logo.png' existe la muestra; si no, deja el espacio reservado.
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_container_width=True)
+    else:
+        st.markdown("<div style='background-color:#E8F5E9; padding:20px; border-radius:8px; text-align:center; color:#1E4D2B;'><b>[Sube tu logo aquí]</b></div>", unsafe_allow_html=True)
+
+with col_titulo:
+    st.markdown(f"""
+    <div class="nav-bar">
+        <div>
+            <div class="nav-title">🌿 MARCO 2.0 <span style="font-size:14px; font-weight:normal; opacity:0.8;">by Valo</span></div>
+            <div class="nav-sub">Sistema de Monitoreo Ambiental de Ríos y Quebradas — CORNARE</div>
+        </div>
+        <div style="text-align:right;">
+            <span style="background-color:#4E3629; padding:6px 12px; border-radius:15px; font-size:12px;">Estudiante: {NOMBRE_ESTUDIANTE}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Filtros de búsqueda
+# Barra de Filtro de Búsqueda (Estilo Web)
 # ------------------------------------------------------------------
-col_filtro, col_boton = st.columns([3, 1])
+with st.container():
+    col_f1, col_f2 = st.columns([3, 1])
+    with col_f1:
+        rango_fechas = st.date_input(
+            "Rango de Fechas para Consulta:",
+            value=(pd.to_datetime("2026-08-20"), pd.to_datetime("2026-08-25")),
+            format="YYYY/MM/DD",
+        )
+    with col_f2:
+        st.write("##")
+        consultar = st.button("🔍 Consultar Estación", type="primary", use_container_width=True)
 
-with col_filtro:
-    rango_fechas = st.date_input(
-        "Selecciona el rango de fechas:",
-        value=(pd.to_datetime("2026-08-20"), pd.to_datetime("2026-08-25")),
-        format="YYYY/MM/DD",
-    )
-
-with col_boton:
-    st.write("##")
-    consultar = st.button("🔍 Consultar", type="primary", use_container_width=True)
-
-# Lógica de consulta enviando resultados al session_state
+# Manejo de consulta
 if consultar:
     if isinstance(rango_fechas, tuple) and len(rango_fechas) == 2:
         fecha_desde = rango_fechas[0].strftime("%Y-%m-%d")
         fecha_hasta = rango_fechas[1].strftime("%Y-%m-%d")
 
-        with st.spinner("Consultando la API de CORNARE..."):
+        with st.spinner("Conectando con la red de estaciones..."):
             datos_crudos, error = obtener_serie_nivel(CODIGO_ESTACION, fecha_desde, fecha_hasta, CALIDAD_DEFECTO)
 
         if error:
@@ -139,7 +226,7 @@ if consultar:
         else:
             registros = obtener_todas_las_paginas(datos_crudos)
             if not registros:
-                st.session_state["error"] = "No hay registros para esta estación y rango de fechas. Prueba otro rango."
+                st.session_state["error"] = "No se encontraron registros para la fecha seleccionada."
                 st.session_state["df"] = None
             else:
                 df = pd.DataFrame(registros)
@@ -151,7 +238,6 @@ if consultar:
                 lat, lon, coords_reales = detectar_coordenadas(datos_crudos)
                 indice_calidad, huecos, n_outliers = calcular_indice_calidad(df)
 
-                # Persistencia en memoria de Streamlit
                 st.session_state["df"] = df
                 st.session_state["lat"] = lat
                 st.session_state["lon"] = lon
@@ -160,11 +246,9 @@ if consultar:
                 st.session_state["huecos"] = huecos
                 st.session_state["n_outliers"] = n_outliers
                 st.session_state["error"] = None
-    else:
-        st.warning("Por favor, selecciona una fecha inicial y una fecha final completas.")
 
 # ------------------------------------------------------------------
-# Renderizado de la interfaz tras la consulta
+# Renderizado Dashboard principal (Grid Tipo MARCO)
 # ------------------------------------------------------------------
 if st.session_state.get("error"):
     st.error(f"❌ {st.session_state['error']}")
@@ -180,87 +264,75 @@ elif st.session_state.get("df") is not None:
 
     st.markdown("---")
 
-    # Métricas
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Lecturas", len(df))
-    m2.metric("Nivel promedio", f"{df['nivel'].mean():.2f}")
-    m3.metric("Índice de calidad", f"{indice_calidad} / 100")
-    m4.metric("Outliers detectados", n_outliers)
+    # Fila Principal: Mapa, Galería y Tarjeta Promedio (Estilo Web MARCO)
+    c_map, c_galeria, c_info = st.columns([1.2, 1.2, 0.8])
 
-    # Gráfico
-    st.subheader("Serie de nivel")
-    st.line_chart(df.set_index("fecha")["nivel"])
-
-    # Mapa e Imágenes
-    st.subheader("📍 Ubicación de la estación")
-    if not coords_reales:
-        st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
-
-    lista_imagenes = [
-        "imagenes/img1.png",
-        "imagenes/img2.png",
-        "imagenes/img3.png",
-        "imagenes/img4.png",
-    ]
-
-    if "img_idx" not in st.session_state:
-        st.session_state.img_idx = 0
-
-    col_mapa, col_galeria = st.columns([1, 1])
-
-    with col_mapa:
+    with c_map:
+        st.markdown("**📌 Ubicación Geográfica**")
         st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=12)
+        st.caption("Latitud, Longitud: " + f"{lat}, {lon}")
 
-    with col_galeria:
-        st.caption("Desliza para ver la ubicación física del sensor")
+    with c_galeria:
+        st.markdown("**📷 Desliza para ver la ubicación física del sensor**")
+        lista_imagenes = [
+            "imagenes/img1.png",
+            "imagenes/img2.png",
+            "imagenes/img3.png",
+            "imagenes/img4.png",
+        ]
 
-        # Intentar cargar y mostrar la imagen
+        if "img_idx" not in st.session_state:
+            st.session_state.img_idx = 0
+
         ruta_img = lista_imagenes[st.session_state.img_idx]
-
-        try:
-            from PIL import Image
-
-            # Carga la imagen y la ajusta para alinearse al mapa
+        if os.path.exists(ruta_img):
             img = Image.open(ruta_img)
             st.image(img, use_container_width=True)
-        except Exception:
-            st.warning(
-                f"No se encontró la imagen en `{ruta_img}`. Verifica que la carpeta `imagenes` esté subida a GitHub."
-            )
+        else:
+            st.info(f"Imagen en `{ruta_img}` lista para cargarse.")
 
-        c_izq, c_conteo, c_der = st.columns([1, 2, 1])
-
-        with c_izq:
+        b_izq, b_cnt, b_der = st.columns([1, 2, 1])
+        with b_izq:
             if st.button("◀", key="prev_img", use_container_width=True):
-                st.session_state.img_idx = (
-                    st.session_state.img_idx - 1
-                ) % len(lista_imagenes)
+                st.session_state.img_idx = (st.session_state.img_idx - 1) % len(lista_imagenes)
                 st.rerun()
-
-        with c_conteo:
-            st.markdown(
-                f"<h5 style='text-align: center; color: gray;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</h5>",
-                unsafe_allow_html=True,
-            )
-
-        with c_der:
+        with b_cnt:
+            st.markdown(f"<p style='text-align:center; color:#4E3629; font-weight:bold;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</p>", unsafe_allow_html=True)
+        with b_der:
             if st.button("▶", key="next_img", use_container_width=True):
-                st.session_state.img_idx = (
-                    st.session_state.img_idx + 1
-                ) % len(lista_imagenes)
+                st.session_state.img_idx = (st.session_state.img_idx + 1) % len(lista_imagenes)
                 st.rerun()
 
-    # Expanders y Descarga
-    with st.expander("Detalle del índice de calidad"):
-        st.write(f"- Huecos de reporte detectados: **{huecos}**")
-        st.write(f"- Outliers (IQR + nivel negativo): **{n_outliers}** de {len(df)} lecturas")
-        st.write("El índice combina completitud de la serie (70%) y proporción de datos sin outliers (30%).")
+    with c_info:
+        st.markdown(f"""
+        <div class="card-info">
+            <h4 style="margin:0; color:#1E4D2B;">Estación #{CODIGO_ESTACION}</h4>
+            <p style="margin:5px 0; font-size:13px; color:#555;"><b>Red:</b> Hidrológica Red Agua</p>
+            <p style="margin:0; font-size:13px; color:#555;"><b>Lugar:</b> Guarne, Quebrada La Brizuela</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with st.expander("Ver datos crudos"):
+        st.markdown(f"""
+        <div class="card-metric">
+            <div style="font-size:14px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
+            <div class="card-metric-val">{df['nivel'].mean():.1f} cm</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Fila Secundaria: Gráfico y Métricas de Calidad
+    st.markdown("### 📈 Nivel Corriente de Agua")
+    st.line_chart(df.set_index("fecha")["nivel"], color="#1E4D2B")
+
+    # Detalles de Calidad y Descarga
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Lecturas", len(df))
+    m2.metric("Índice de Calidad", f"{indice_calidad} / 100")
+    m3.metric("Outliers Detectados", n_outliers)
+
+    with st.expander("Ver Datos Crudos y Exportar"):
         st.dataframe(df, use_container_width=True)
-
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv", mime="text/csv")
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv", mime="text/csv")
 
 else:
-    st.info("Selecciona el rango de fechas deseado y presiona **Consultar**.")
+    st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
