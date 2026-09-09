@@ -232,13 +232,13 @@ def obtener_estado_semaforo(nivel_max, nivel_actual):
 
 def obtener_interpretacion_humana(nivel):
     if nivel < 30:
-        return "🚶 **Flujo Bajo:** El nivel del agua está bajo el estándar promedio. Sin ningún riesgo.", "#1B5E20"
+        return "🚶 <b>Flujo Bajo:</b> El nivel del agua está bajo el estándar promedio. Sin ningún riesgo.", "#1B5E20"
     elif nivel < 50:
-        return "💧 **Flujo Normal:** Nivel promedio seguro dentro del cauce natural de la quebrada.", "#2E7D32"
+        return "💧 <b>Flujo Normal:</b> Nivel promedio seguro dentro del cauce natural de la quebrada.", "#2E7D32"
     elif nivel < 80:
-        return "🌊 **Flujo Elevado:** El agua alcanza aproximadamente la altura de la rodilla en orilla. Precaución.", "#F57F17"
+        return "🌊 <b>Flujo Elevado:</b> El agua alcanza una altura de precaución. Monitorear orillas.", "#F57F17"
     else:
-        return "🚨 **Flujo Crítico:** Riesgo alto. El agua supera zonas bajas y amenaza desbordamiento.", "#C62828"
+        return "🚨 <b>Flujo Crítico:</b> Riesgo alto. El agua supera zonas bajas y amenaza desbordamiento.", "#C62828"
 
 
 # ------------------------------------------------------------------
@@ -446,69 +446,54 @@ elif st.session_state.get("df") is not None:
         )
 
     # ------------------------------------------------------------------
-    # Fila Secundaria: Gráficos Interactivos Avanzados (Plotly)
+    # Fila Secundaria: Gráficos y Métricas Unificadas (Sin Redundancia)
     # ------------------------------------------------------------------
     st.markdown("### 📊 Monitoreo Detallado del Nivel de Agua")
 
     col_plot_line, col_plot_gauge = st.columns([2.2, 1])
 
     with col_plot_line:
-        # Gráfico interactivo con áreas/zonas de riesgo
         max_y = max(100.0, float(df["nivel"].max()) + 15.0)
-
         fig_line = go.Figure()
 
-        # Banda Verde - Normal (0 a 50 cm)
+        # Zonas de Control y Riesgo
         fig_line.add_hrect(
             y0=0, y1=50,
             fillcolor="rgba(46, 125, 50, 0.12)", line_width=0,
-            annotation_text="Zona Segura (0 - 50 cm)", annotation_position="top left",
-            annotation_font=dict(size=10, color="#2E7D32")
+            annotation_text="Normal", annotation_position="top left"
         )
-        # Banda Amarilla - Prevención (50 a 80 cm)
         fig_line.add_hrect(
             y0=50, y1=80,
             fillcolor="rgba(251, 192, 45, 0.15)", line_width=0,
-            annotation_text="Prevención (50 - 80 cm)", annotation_position="top left",
-            annotation_font=dict(size=10, color="#F57F17")
+            annotation_text="Prevención", annotation_position="top left"
         )
-        # Banda Roja - Alerta (> 80 cm)
         fig_line.add_hrect(
             y0=80, y1=max_y,
             fillcolor="rgba(211, 47, 47, 0.12)", line_width=0,
-            annotation_text="Alerta Crítica (> 80 cm)", annotation_position="top left",
-            annotation_font=dict(size=10, color="#C62828")
+            annotation_text="Alerta Crítica", annotation_position="top left"
         )
 
-        # Línea de nivel del agua
+        # Serie Temporal
         fig_line.add_trace(go.Scatter(
-            x=df["fecha"],
-            y=df["nivel"],
-            mode="lines",
-            name="Nivel (cm)",
+            x=df["fecha"], y=df["nivel"], mode="lines", name="Nivel (cm)",
             line=dict(color="#1E4D2B", width=2.5),
-            hovertemplate="<b>Fecha:</b> %{x|%Y-%m-%d %H:%M}<br><b>Nivel:</b> %{y:.1f} cm<extra></extra>"
+            hovertemplate="<b>Fecha:</b> %{x|%d/%m %H:%M}<br><b>Nivel:</b> %{y:.1f} cm<extra></extra>"
         ))
 
         fig_line.update_layout(
-            title="Evolución Temporal con Umbrales de Riesgo",
-            xaxis_title="Fecha y Hora",
-            yaxis_title="Nivel de Agua (cm)",
-            yaxis=dict(range=[0, max_y]),
-            margin=dict(l=10, r=10, t=40, b=10),
-            hovermode="x unified",
-            template="plotly_white",
-            height=320
+            title="Serie Temporal con Umbrales de Control",
+            xaxis_title="Fecha y Hora", yaxis_title="Nivel (cm)",
+            yaxis=dict(range=[0, max_y]), margin=dict(l=10, r=10, t=40, b=10),
+            hovermode="x unified", template="plotly_white", height=300
         )
         st.plotly_chart(fig_line, use_container_width=True)
 
     with col_plot_gauge:
-        # Tacómetro/Medidor de nivel actual
+        # Tacómetro para Nivel Actual
         fig_gauge = go.Figure(go.Indicator(
             mode="gauge+number+delta",
             value=nivel_actual,
-            domain={'x': [0, 1], 'y': [0, 1]},
-            title={'text': "Nivel Actual (cm)", 'font': {'size': 15, 'color': "#1E4D2B"}},
+            title={'text': "Nivel Actual (cm)", 'font': {'size': 14, 'color': "#1E4D2B"}},
             delta={'reference': df["nivel"].mean(), 'increasing': {'color': "#C62828"}, 'decreasing': {'color': "#1565C0"}},
             gauge={
                 'axis': {'range': [0, max(100.0, float(nivel_maximo) + 10.0)]},
@@ -518,47 +503,36 @@ elif st.session_state.get("df") is not None:
                     {'range': [50, 80], 'color': '#FFFDE7'},
                     {'range': [80, 150], 'color': '#FFEBEE'}
                 ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 3},
-                    'thickness': 0.75,
-                    'value': 80
-                }
+                'threshold': {'line': {'color': "red", 'width': 3}, 'thickness': 0.75, 'value': 80}
             }
         ))
-        fig_gauge.update_layout(
-            margin=dict(l=20, r=20, t=40, b=10),
-            height=320,
-            template="plotly_white"
-        )
+        fig_gauge.update_layout(margin=dict(l=15, r=15, t=30, b=0), height=220, template="plotly_white")
         st.plotly_chart(fig_gauge, use_container_width=True)
 
-    # Explicación cotidiana / Lectura didáctica
-    texto_humano, color_humano = obtener_interpretacion_humana(nivel_actual)
-    st.markdown(
-        f"""
-        <div style="background-color: #FFFFFF; border: 1px solid #E0E7E1; border-left: 5px solid {color_humano}; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-            <span style="font-size:14px; color:#333;"><b>¿Qué significa esto para el lector?</b> {texto_humano}</span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        # Interpretación Unificada debajo del tacómetro
+        texto_humano, color_humano = obtener_interpretacion_humana(nivel_actual)
+        st.markdown(
+            f"""
+            <div style="background-color: #FFFFFF; border-left: 4px solid {color_humano}; padding: 8px 12px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <span style="font-size:12px; color:#333;">{texto_humano}</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    # Desplegable didáctico de ayuda
-    with st.expander("❓ ¿Cómo interpretar los gráficos de nivel de agua?"):
-        st.markdown("""
-        * **Zona Verde (0 - 50 cm):** Flujo habitual del río. Las actividades cercanas al cauce no representan peligro.
-        * **Zona Amarilla (50 - 80 cm):** Fase de prevención. Indica precipitaciones recientes en la cuenca. Precaución en zonas bajas.
-        * **Zona Roja (> 80 cm):** Umbral crítico. Posible desbordamiento o inundación imprevista en orillas.
-        * **Tendencia Creciente (📈):** El volumen de agua aumenta rápidamente; suele anticipar lluvias intensas en la cuenca alta.
-        * **Tendencia en Recesión (📉):** El cuerpo de agua está evacuando el exceso acumulado de lluvias previas.
-        """)
-
-    # Métricas adicionales de resumen
+    # Métricas de Resumen Limpias
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Última Lectura", f"{nivel_actual:.1f} cm")
-    m2.metric("Nivel Máximo", f"{nivel_maximo:.1f} cm")
-    m3.metric("Nivel Mínimo", f"{nivel_minimo:.1f} cm")
-    m4.metric("Índice de Calidad", f"{indice_calidad} / 100")
+    m1.metric("Nivel Máximo", f"{nivel_maximo:.1f} cm")
+    m2.metric("Nivel Mínimo", f"{nivel_minimo:.1f} cm")
+    m3.metric("Calidad de Datos", f"{indice_calidad} / 100")
+    m4.metric("Registros Leídos", f"{len(df)} datos")
+
+    with st.expander("❓ ¿Cómo interpretar estos indicadores?"):
+        st.markdown("""
+        * **Tacómetro:** Muestra el valor en tiempo real comparado contra el promedio del período (variación Delta).
+        * **Zonas de Control:** Verde (Seguro), Amarillo (Atención por lluvias), Rojo (Riesgo de desbordamiento).
+        * **Índice de Calidad:** Evalúa la continuidad de los datos enviados por la estación hidrológica de CORNARE.
+        """)
 
     with st.expander("Ver Datos Crudos y Exportar"):
         st.dataframe(df, use_container_width=True)
