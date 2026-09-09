@@ -197,10 +197,10 @@ elif st.session_state.get("df") is not None:
         st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
 
     lista_imagenes = [
-        "imagenes/img1.png",
-        "imagenes/img2.png",
-        "imagenes/img3.png",
-        "imagenes/img4.png",
+        "imagenes/img1.jpg",
+        "imagenes/img2.jpg",
+        "imagenes/img3.jpg",
+        "imagenes/img4.jpg",
     ]
 
     if "img_idx" not in st.session_state:
@@ -213,19 +213,28 @@ elif st.session_state.get("df") is not None:
 
     with col_galeria:
         st.caption("Desliza para ver la ubicación física del sensor")
-        
-        # Muestra la imagen ajustando la altura al mapa
-        st.image(
-            lista_imagenes[st.session_state.img_idx], 
-            use_container_width=True,
-            height=380
-        )
+
+        # Intentar cargar y mostrar la imagen
+        ruta_img = lista_imagenes[st.session_state.img_idx]
+
+        try:
+            from PIL import Image
+
+            # Carga la imagen y la ajusta para alinearse al mapa
+            img = Image.open(ruta_img)
+            st.image(img, use_container_width=True)
+        except Exception:
+            st.warning(
+                f"No se encontró la imagen en `{ruta_img}`. Verifica que la carpeta `imagenes` esté subida a GitHub."
+            )
 
         c_izq, c_conteo, c_der = st.columns([1, 2, 1])
 
         with c_izq:
             if st.button("◀", key="prev_img", use_container_width=True):
-                st.session_state.img_idx = (st.session_state.img_idx - 1) % len(lista_imagenes)
+                st.session_state.img_idx = (
+                    st.session_state.img_idx - 1
+                ) % len(lista_imagenes)
                 st.rerun()
 
         with c_conteo:
@@ -236,7 +245,9 @@ elif st.session_state.get("df") is not None:
 
         with c_der:
             if st.button("▶", key="next_img", use_container_width=True):
-                st.session_state.img_idx = (st.session_state.img_idx + 1) % len(lista_imagenes)
+                st.session_state.img_idx = (
+                    st.session_state.img_idx + 1
+                ) % len(lista_imagenes)
                 st.rerun()
 
     # Expanders y Descarga
