@@ -28,16 +28,16 @@ CANDIDATOS_LON = ["lng", "lon", "longitude", "longitud"]
 st.set_page_config(page_title="MARCO 2.0 — Monitoreo de Ríos", page_icon="🌿", layout="wide")
 
 # ------------------------------------------------------------------
-# Estilos CSS Personalizados (Verde Oscuro, Café y Diseño Dashboard)
+# Estilos CSS Personalizados (Gama de Verdes Ambiental - Sin tonos café)
 # ------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* Estilos globales y paleta de colores */
+    /* Estilos globales y paleta de colores basada en verdes */
     :root {
         --verde-oscuro: #1E4D2B;
         --verde-principal: #2E7D32;
-        --cafe-tierra: #4E3629;
-        --fondo-gris: #F4F6F4;
+        --verde-claro: #E8F5E9;
+        --verde-texto: #1B5E20;
     }
     
     .stApp {
@@ -68,6 +68,17 @@ st.markdown("""
         color: #C8E6C9;
     }
 
+    /* Badge para el nombre del estudiante */
+    .student-badge {
+        background-color: var(--verde-claro);
+        color: var(--verde-texto);
+        padding: 6px 14px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid #A5D6A7;
+    }
+
     /* Tarjetas tipo Dashboard */
     .card-info {
         background-color: #FFFFFF;
@@ -94,7 +105,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
 
 # ------------------------------------------------------------------
 # Funciones de consulta
@@ -177,11 +187,10 @@ def calcular_indice_calidad(df):
 col_logo, col_titulo = st.columns([1, 4])
 
 with col_logo:
-    # Espacio asignado para tu logo local. Si la foto 'logo.png' existe la muestra; si no, deja el espacio reservado.
     if os.path.exists("logo.png"):
         st.image("logo.png", use_container_width=True)
     else:
-        st.markdown("<div style='background-color:#E8F5E9; padding:20px; border-radius:8px; text-align:center; color:#1E4D2B;'><b>[Sube tu logo aquí]</b></div>", unsafe_allow_html=True)
+        st.markdown("<div style='background-color:#E8F5E9; padding:20px; border-radius:8px; text-align:center; color:#1E4D2B;'><b>[Logo aquí]</b></div>", unsafe_allow_html=True)
 
 with col_titulo:
     st.markdown(f"""
@@ -191,7 +200,7 @@ with col_titulo:
             <div class="nav-sub">Sistema de Monitoreo Ambiental de Ríos y Quebradas — CORNARE</div>
         </div>
         <div style="text-align:right;">
-            <span style="background-color:#4E3629; padding:6px 12px; border-radius:15px; font-size:12px;">Estudiante: {NOMBRE_ESTUDIANTE}</span>
+            <span class="student-badge">Estudiante: {NOMBRE_ESTUDIANTE}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
