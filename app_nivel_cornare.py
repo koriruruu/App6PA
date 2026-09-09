@@ -272,6 +272,43 @@ if consultar:
                 st.session_state["error"] = None
 
 # ------------------------------------------------------------------
+# Función del Semáforo Hidrológico (Quebrada La Brizuela)
+# ------------------------------------------------------------------
+def obtener_estado_semaforo(nivel_max, nivel_actual):
+    # Umbrales ajustados para la estación de la Quebrada La Brizuela (cm)
+    UMBRAL_PREVENCION = 50.0
+    UMBRAL_ALERTA = 80.0
+
+    if nivel_max >= UMBRAL_ALERTA:
+        return {
+            "color": "#FFEBEE",
+            "borde": "#D32F2F",
+            "texto_color": "#C62828",
+            "icono": "🚨",
+            "titulo": "ALERTA ROJA — Riesgo de Desbordamiento",
+            "mensaje": f"El nivel máximo registrado ({nivel_max:.1f} cm) ha superado el umbral crítico de {UMBRAL_ALERTA} cm. Se recomienda activar protocolos de monitoreo continuo en comunidades ribereñas.",
+        }
+    elif nivel_max >= UMBRAL_PREVENCION:
+        return {
+            "color": "#FFFDE7",
+            "borde": "#FBC02D",
+            "texto_color": "#F57F17",
+            "icono": "⚠️",
+            "titulo": "ALERTA AMARILLA — Nivel en Incremento",
+            "mensaje": f"El nivel ha alcanzado los {nivel_max:.1f} cm, superando el nivel de prevención ({UMBRAL_PREVENCION} cm). Mantener observación por posibles precipitaciones en la cuenca alta de Guarne.",
+        }
+    else:
+        return {
+            "color": "#E8F5E9",
+            "borde": "#2E7D32",
+            "texto_color": "#1B5E20",
+            "icono": "✅",
+            "titulo": "ESTADO VERDE — Nivel Normal",
+            "mensaje": f"La corriente se mantiene dentro del cauce habitualmente seguro. Nivel actual en {nivel_actual:.1f} cm y máximo registrado en {nivel_max:.1f} cm.",
+        }
+
+
+# ------------------------------------------------------------------
 # Renderizado Dashboard principal
 # ------------------------------------------------------------------
 if st.session_state.get("error"):
@@ -286,7 +323,23 @@ elif st.session_state.get("df") is not None:
     huecos = st.session_state["huecos"]
     n_outliers = st.session_state["n_outliers"]
 
+    nivel_actual = df["nivel"].iloc[-1]
+    nivel_maximo = df["nivel"].max()
+    nivel_minimo = df["nivel"].min()
+    semaforo = obtener_estado_semaforo(nivel_maximo, nivel_actual)
+
     st.markdown("---")
+
+    # 🚦 Semáforo Hidrológico
+    st.markdown(
+        f"""
+    <div style="background-color:{semaforo['color']}; border-left:6px solid {semaforo['borde']}; padding:15px 20px; border-radius:10px; margin-bottom:20px;">
+        <h4 style="margin:0; color:{semaforo['texto_color']};">{semaforo['icono']} {semaforo['titulo']}</h4>
+        <p style="margin:5px 0 0 0; color:#333333; font-size:14px;">{semaforo['mensaje']}</p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Fila Principal: Mapa, Galería y Tarjeta Promedio
     c_map, c_galeria, c_info = st.columns([1.2, 1.2, 0.8])
@@ -318,45 +371,66 @@ elif st.session_state.get("df") is not None:
         b_izq, b_cnt, b_der = st.columns([1, 2, 1])
         with b_izq:
             if st.button("◀", key="prev_img", use_container_width=True):
-                st.session_state.img_idx = (st.session_state.img_idx - 1) % len(lista_imagenes)
+                st.session_state.img_idx = (
+                    st.session_state.img_idx - 1
+                ) % len(lista_imagenes)
                 st.rerun()
         with b_cnt:
-            st.markdown(f"<p style='text-align:center; color:#1B5E20; font-weight:bold;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</p>", unsafe_allow_html=True)
+            st.markdown(
+                f"<p style='text-align:center; color:#1B5E20; font-weight:bold;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</p>",
+                unsafe_allow_html=True,
+            )
         with b_der:
             if st.button("▶", key="next_img", use_container_width=True):
-                st.session_state.img_idx = (st.session_state.img_idx + 1) % len(lista_imagenes)
+                st.session_state.img_idx = (
+                    st.session_state.img_idx + 1
+                ) % len(lista_imagenes)
                 st.rerun()
 
     with c_info:
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="card-info">
             <h4 style="margin:0; color:#1E4D2B;">Estación #{CODIGO_ESTACION}</h4>
             <p style="margin:5px 0; font-size:13px; color:#555;"><b>Red:</b> Hidrológica Red Agua</p>
             <p style="margin:0; font-size:13px; color:#555;"><b>Lugar:</b> Guarne, Quebrada La Brizuela</p>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="card-metric">
             <div style="font-size:14px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
             <div class="card-metric-val">{df['nivel'].mean():.1f} cm</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     # Fila Secundaria: Gráfico y Métricas de Calidad
     st.markdown("### 📈 Nivel Corriente de Agua")
     st.line_chart(df.set_index("fecha")["nivel"], color="#1E4D2B")
 
-    # Detalles de Calidad y Descarga
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Total Lecturas", len(df))
-    m2.metric("Índice de Calidad", f"{indice_calidad} / 100")
-    m3.metric("Outliers Detectados", n_outliers)
+    # Métricas adicionales incluyendo Máximo y Mínimo del periodo
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Última Lectura", f"{nivel_actual:.1f} cm")
+    m2.metric("Nivel Máximo", f"{nivel_maximo:.1f} cm")
+    m3.metric("Nivel Mínimo", f"{nivel_minimo:.1f} cm")
+    m4.metric("Índice de Calidad", f"{indice_calidad} / 100")
 
     with st.expander("Ver Datos Crudos y Exportar"):
         st.dataframe(df, use_container_width=True)
         csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv", mime="text/csv")
+        st.download_button(
+            "⬇️ Descargar CSV",
+            csv,
+            file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv",
+            mime="text/csv",
+        )
 
 else:
-    st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
+    st.info(
+        "Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**."
+    )
