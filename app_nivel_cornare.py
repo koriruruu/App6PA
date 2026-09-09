@@ -62,7 +62,6 @@ def obtener_todas_las_paginas(datos_json, timeout=30):
 
 
 def detectar_coordenadas(datos_json):
-    """Busca lat/lon en las llaves raíz de la respuesta. Si no las encuentra, usa el valor por defecto."""
     if not isinstance(datos_json, dict):
         return LAT_DEFECTO, LON_DEFECTO, False
 
@@ -78,7 +77,6 @@ def detectar_coordenadas(datos_json):
 
 
 def calcular_indice_calidad(df):
-    """Índice simple (0-100) combinando completitud de la serie y proporción de outliers."""
     if df.empty or len(df) < 2:
         return 0.0, 0, 0
 
@@ -104,14 +102,14 @@ def calcular_indice_calidad(df):
 
 
 # ------------------------------------------------------------------
-# Encabezado principal (vista centrada, sin sidebar)
+# Encabezado principal
 # ------------------------------------------------------------------
 st.title("🌊 Nivel de ríos y quebradas — CORNARE")
 st.markdown(f"**Estudiante:** {NOMBRE_ESTUDIANTE} &nbsp;&nbsp;|&nbsp;&nbsp; **Estación:** {CODIGO_ESTACION}")
 st.divider()
 
 # ------------------------------------------------------------------
-# Filtros de búsqueda en el cuerpo principal
+# Filtros de búsqueda
 # ------------------------------------------------------------------
 col_filtro, col_boton = st.columns([3, 1])
 
@@ -123,12 +121,10 @@ with col_filtro:
     )
 
 with col_boton:
-    st.write("##")  # Espaciado para alinear el botón con el campo de texto
+    st.write("##")
     consultar = st.button("🔍 Consultar", type="primary", use_container_width=True)
 
-# ------------------------------------------------------------------
-# Consulta y visualización de datos
-# ------------------------------------------------------------------
+# Lógica de consulta enviando resultados al session_state
 if consultar:
     if isinstance(rango_fechas, tuple) and len(rango_fechas) == 2:
         fecha_desde = rango_fechas[0].strftime("%Y-%m-%d")
@@ -138,12 +134,13 @@ if consultar:
             datos_crudos, error = obtener_serie_nivel(CODIGO_ESTACION, fecha_desde, fecha_hasta, CALIDAD_DEFECTO)
 
         if error:
-            st.error(f"❌ {error}")
+            st.session_state["error"] = error
+            st.session_state["df"] = None
         else:
             registros = obtener_todas_las_paginas(datos_crudos)
-
             if not registros:
-                st.warning("No hay registros para esta estación y rango de fechas. Prueba otro rango.")
+                st.session_state["error"] = "No hay registros para esta estación y rango de fechas. Prueba otro rango."
+                st.session_state["df"] = None
             else:
                 df = pd.DataFrame(registros)
                 df = df.rename(columns={LLAVE_FECHA: "fecha", LLAVE_VALOR: "nivel"})
@@ -154,86 +151,105 @@ if consultar:
                 lat, lon, coords_reales = detectar_coordenadas(datos_crudos)
                 indice_calidad, huecos, n_outliers = calcular_indice_calidad(df)
 
-                st.markdown("---")
-
-                # --- Métricas principales ---
-                m1, m2, m3, m4 = st.columns(4)
-                m1.metric("Lecturas", len(df))
-                m2.metric("Nivel promedio", f"{df['nivel'].mean():.2f}")
-                m3.metric("Índice de calidad", f"{indice_calidad} / 100")
-                m4.metric("Outliers detectados", n_outliers)
-
-                # --- Gráfico de la serie ---
-                st.subheader("Serie de nivel")
-                st.line_chart(df.set_index("fecha")["nivel"])
-
-               # ------------------------------------------------------------------
-                # Ubicación de la estación e Imágenes
-                # ------------------------------------------------------------------
-                st.subheader("📍 Ubicación y entorno de la estación")
-                
-                if not coords_reales:
-                    st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
-                
-                # Lista con las rutas locales de tus imágenes
-                lista_imagenes = [
-                    "imagenes/img1.png",  
-                    "imagenes/img2.png",
-                    "imagenes/img3.png",
-                    "imagenes/img4.png",
-                ]
-                
-                # Inicializar la imagen actual en session_state si no existe
-                if "img_idx" not in st.session_state:
-                    st.session_state.img_idx = 0
-                
-                col_mapa, col_galeria = st.columns([1, 1])
-                
-                with col_mapa:
-                    st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=12)
-                
-                with col_galeria:
-                    # Muestra la imagen seleccionada sin títulos
-                    st.image(
-                        lista_imagenes[st.session_state.img_idx], use_container_width=True
-                    )
-                
-                    # Botones de navegación para deslizar la galería
-                    c_izq, c_conteo, c_der = st.columns([1, 2, 1])
-                
-                    with c_izq:
-                        if st.button("◀", key="prev_img", use_container_width=True):
-                            st.session_state.img_idx = (st.session_state.img_idx - 1) % len(
-                                lista_imagenes
-                            )
-                            st.rerun()
-                
-                    with c_conteo:
-                        # Indicador numérico simple para la galería (ej: 1 / 4)
-                        st.markdown(
-                            f"<h5 style='text-align: center; color: gray;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</h5>",
-                            unsafe_allow_html=True,
-                        )
-                
-                    with c_der:
-                        if st.button("▶", key="next_img", use_container_width=True):
-                            st.session_state.img_idx = (st.session_state.img_idx + 1) % len(
-                                lista_imagenes
-                            )
-                            st.rerun()
-
-                # --- Detalles y descargas ---
-                with st.expander("Detalle del índice de calidad"):
-                    st.write(f"- Huecos de reporte detectados: **{huecos}**")
-                    st.write(f"- Outliers (IQR + nivel negativo): **{n_outliers}** de {len(df)} lecturas")
-                    st.write("El índice combina completitud de la serie (70%) y proporción de datos sin outliers (30%).")
-
-                with st.expander("Ver datos crudos"):
-                    st.dataframe(df, use_container_width=True)
-
-                csv = df.to_csv(index=False).encode("utf-8")
-                st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv", mime="text/csv")
+                # Persistencia en memoria de Streamlit
+                st.session_state["df"] = df
+                st.session_state["lat"] = lat
+                st.session_state["lon"] = lon
+                st.session_state["coords_reales"] = coords_reales
+                st.session_state["indice_calidad"] = indice_calidad
+                st.session_state["huecos"] = huecos
+                st.session_state["n_outliers"] = n_outliers
+                st.session_state["error"] = None
     else:
         st.warning("Por favor, selecciona una fecha inicial y una fecha final completas.")
+
+# ------------------------------------------------------------------
+# Renderizado de la interfaz tras la consulta
+# ------------------------------------------------------------------
+if st.session_state.get("error"):
+    st.error(f"❌ {st.session_state['error']}")
+
+elif st.session_state.get("df") is not None:
+    df = st.session_state["df"]
+    lat = st.session_state["lat"]
+    lon = st.session_state["lon"]
+    coords_reales = st.session_state["coords_reales"]
+    indice_calidad = st.session_state["indice_calidad"]
+    huecos = st.session_state["huecos"]
+    n_outliers = st.session_state["n_outliers"]
+
+    st.markdown("---")
+
+    # Métricas
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Lecturas", len(df))
+    m2.metric("Nivel promedio", f"{df['nivel'].mean():.2f}")
+    m3.metric("Índice de calidad", f"{indice_calidad} / 100")
+    m4.metric("Outliers detectados", n_outliers)
+
+    # Gráfico
+    st.subheader("Serie de nivel")
+    st.line_chart(df.set_index("fecha")["nivel"])
+
+    # Mapa e Imágenes
+    st.subheader("📍 Ubicación de la estación")
+    if not coords_reales:
+        st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
+
+    lista_imagenes = [
+        "imagenes/img1.png",
+        "imagenes/img2.png",
+        "imagenes/img3.png",
+        "imagenes/img4.png",
+    ]
+
+    if "img_idx" not in st.session_state:
+        st.session_state.img_idx = 0
+
+    col_mapa, col_galeria = st.columns([1, 1])
+
+    with col_mapa:
+        st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=12)
+
+    with col_galeria:
+        st.caption("Desliza para ver la ubicación física del sensor")
+        
+        # Muestra la imagen ajustando la altura al mapa
+        st.image(
+            lista_imagenes[st.session_state.img_idx], 
+            use_container_width=True,
+            height=380
+        )
+
+        c_izq, c_conteo, c_der = st.columns([1, 2, 1])
+
+        with c_izq:
+            if st.button("◀", key="prev_img", use_container_width=True):
+                st.session_state.img_idx = (st.session_state.img_idx - 1) % len(lista_imagenes)
+                st.rerun()
+
+        with c_conteo:
+            st.markdown(
+                f"<h5 style='text-align: center; color: gray;'>{st.session_state.img_idx + 1} / {len(lista_imagenes)}</h5>",
+                unsafe_allow_html=True,
+            )
+
+        with c_der:
+            if st.button("▶", key="next_img", use_container_width=True):
+                st.session_state.img_idx = (st.session_state.img_idx + 1) % len(lista_imagenes)
+                st.rerun()
+
+    # Expanders y Descarga
+    with st.expander("Detalle del índice de calidad"):
+        st.write(f"- Huecos de reporte detectados: **{huecos}**")
+        st.write(f"- Outliers (IQR + nivel negativo): **{n_outliers}** de {len(df)} lecturas")
+        st.write("El índice combina completitud de la serie (70%) y proporción de datos sin outliers (30%).")
+
+    with st.expander("Ver datos crudos"):
+        st.dataframe(df, use_container_width=True)
+
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇️ Descargar CSV", csv, file_name=f"nivel_estacion_{CODIGO_ESTACION}.csv", mime="text/csv")
+
 else:
     st.info("Selecciona el rango de fechas deseado y presiona **Consultar**.")
