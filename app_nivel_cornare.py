@@ -583,7 +583,47 @@ elif st.session_state.get("df") is not None:
 
 else:
     st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
+# ------------------------------------------------------------------
+    # Sección de Recomendaciones y Gestión del Riesgo
+    # ------------------------------------------------------------------
+    st.markdown("### 🚨 ¿Qué hacer en caso de Alerta o Creciente?")
+    
+    col_rec1, col_rec2 = st.columns(2)
 
+    with col_rec1:
+        st.markdown("""
+        <div style="background-color: #FFFDE7; border-left: 5px solid #FBC02D; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+            <h5 style="margin:0 0 8px 0; color:#F57F17;">⚠️ Nivel en Prevención (50 - 80 cm)</h5>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #333;">
+                <li><b>Monitoreo continuo:</b> Revisa las actualizaciones del nivel en este panel cada hora.</li>
+                <li><b>Atención a lluvias:</b> Observa si hay precipitaciones intensas en la cuenca alta de Guarne.</li>
+                <li><b>Preparación:</b> Asegura documentos importantes y elementos de primera necesidad.</li>
+                <li><b>Evita las orillas:</b> No te acerques al cauce de la quebrada La Brizuela para fotografías o recreación.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_rec2:
+        st.markdown("""
+        <div style="background-color: #FFEBEE; border-left: 5px solid #D32F2F; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+            <h5 style="margin:0 0 8px 0; color:#C62828;">🚨 Nivel Crítico / Emergencia (> 80 cm)</h5>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #333;">
+                <li><b>Evacuación preventiva:</b> Si vives en zona ribereña o de inundación, desplázate a un lugar elevado.</li>
+                <li><b>Desconecta servicios:</b> Desconecta el flujo de energía eléctrica y gas en la vivienda.</li>
+                <li><b>No intentes cruzar:</b> Nunca camines ni atravieses corrientes de agua a pie o en vehículo.</li>
+                <li><b>Llama a emergencias:</b> Contacta de inmediato a la cadena de llamadas del Municipio de Guarne.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Acordeón con Líneas de Atención Directa
+    with st.expander("📞 Directorio Telefónico de Emergencias — Guarne / CORNARE"):
+        st.markdown("""
+        * 🚒 **Bomberos Guarne:** `(604) 551 1313` / `119`
+        * 🛡️ **Consejo Municipal de Gestión del Riesgo (CMGRD):** `(604) 551 0022`
+        * 🌿 **CORNARE (Línea de Atención Ambiental):** `01 8000 414214`
+        * 🚑 **Línea Única de Emergencias:** `123`
+        """)
 # ------------------------------------------------------------------
 # Pie de Página Institucional 
 # ------------------------------------------------------------------
