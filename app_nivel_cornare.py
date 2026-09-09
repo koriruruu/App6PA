@@ -307,7 +307,48 @@ def obtener_estado_semaforo(nivel_max, nivel_actual):
             "mensaje": f"La corriente se mantiene dentro del cauce habitualmente seguro. Nivel actual en {nivel_actual:.1f} cm y máximo registrado en {nivel_max:.1f} cm.",
         }
 
+        # ------------------------------------------------------------------
+        # Cálculo de Tendencia y Estado del Flujo
+        # ------------------------------------------------------------------
+        if len(df) >= 2:
+            diferencia = df["nivel"].iloc[-1] - df["nivel"].iloc[-2]
+            if diferencia > 1.5:
+                estado_flujo = "📈 Creciente (En ascenso)"
+                color_flujo = "#C62828"  # Rojo / Alerta
+            elif diferencia < -1.5:
+                estado_flujo = "📉 Recesión (Descendiendo)"
+                color_flujo = "#1565C0"  # Azul / Estable
+            else:
+                estado_flujo = "➡️ Estable (Sin variaciones)"
+                color_flujo = "#2E7D32"  # Verde / Normal
+            var_texto = f"{diferencia:+.1f} cm respecto a lectura previa"
+        else:
+            estado_flujo = "➡️ Estable"
+            color_flujo = "#2E7D32"
+            var_texto = "Sin suficientes datos"
 
+        # Tarjeta 1: Nivel Promedio
+        st.markdown(
+            f"""
+        <div class="card-metric" style="margin-bottom: 12px;">
+            <div style="font-size:13px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
+            <div class="card-metric-val">{df['nivel'].mean():.1f} cm</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+        # Tarjeta 2: Tendencia / Comportamiento del Flujo (Debajo del Promedio)
+        st.markdown(
+            f"""
+        <div style="background-color: #FFFFFF; border: 1px solid #E0E7E1; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+            <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#555; font-weight:600;">Comportamiento Reciente</div>
+            <div style="font-size:16px; font-weight:bold; color:{color_flujo}; margin-top:5px;">{estado_flujo}</div>
+            <div style="font-size:12px; color:#777; margin-top:3px;">{var_texto}</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 # ------------------------------------------------------------------
 # Renderizado Dashboard principal
 # ------------------------------------------------------------------
