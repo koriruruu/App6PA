@@ -3,3 +3,5 @@ pandas
 numpy
 requests
 urllib3
+Pillow
+plotly
