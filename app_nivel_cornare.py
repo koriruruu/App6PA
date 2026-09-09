@@ -94,13 +94,13 @@ st.markdown("""
         background-color: var(--verde-oscuro);
         color: white;
         border-radius: 8px;
-        padding: 20px;
+        padding: 15px;
         text-align: center;
         box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     
     .card-metric-val {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: bold;
         color: #A5D6A7;
     }
@@ -240,6 +240,30 @@ def obtener_interpretacion_humana(nivel):
     else:
         return "🚨 <b>Flujo Crítico:</b> Riesgo alto. El agua supera zonas bajas y amenaza desbordamiento.", "#C62828"
 
+
+def obtener_alerta_o_curiosidad(df, UMBRAL_ALERTA=80.0):
+    df_alertas = df[df["nivel"] >= UMBRAL_ALERTA]
+    
+    if not df_alertas.empty:
+        ultima_alerta = df_alertas.iloc[-1]
+        fecha_str = ultima_alerta["fecha"].strftime("%d/%m %H:%M")
+        nivel_critico = ultima_alerta["nivel"]
+        
+        return {
+            "titulo": "🚨 Último Nivel Crítico",
+            "valor": f"{nivel_critico:.1f} cm",
+            "subtexto": f"Detectado el {fecha_str}",
+            "color_borde": "#D32F2F",
+            "color_texto": "#C62828"
+        }
+    else:
+        return {
+            "titulo": "💡 Dato Curioso de la Cuenca",
+            "valor": "Sin Alertas",
+            "subtexto": "La quebrada La Brizuela es un afluente clave del río Negro en Guarne.",
+            "color_borde": "#2E7D32",
+            "color_texto": "#1E4D2B"
+        }
 
 # ------------------------------------------------------------------
 # Encabezado Web con Logo y Título
@@ -407,9 +431,22 @@ elif st.session_state.get("df") is not None:
         # Tarjeta 2: Nivel Promedio
         st.markdown(
             f"""
-        <div class="card-metric" style="margin-bottom: 12px;">
-            <div style="font-size:13px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
+        <div class="card-metric" style="margin-bottom: 10px;">
+            <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px;">Nivel Promedio</div>
             <div class="card-metric-val">{df['nivel'].mean():.1f} cm</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+        # Tarjeta 3: Nueva Tarjeta Dinámica (Alerta Máxima / Dato Curioso)
+        info_extra = obtener_alerta_o_curiosidad(df)
+        st.markdown(
+            f"""
+        <div style="background-color: #FFFFFF; border-left: 4px solid {info_extra['color_borde']}; border-radius: 8px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px;">
+            <div style="font-size:11px; text-transform:uppercase; font-weight:bold; color:{info_extra['color_texto']};">{info_extra['titulo']}</div>
+            <div style="font-size:18px; font-weight:bold; color:#333; margin-top:2px;">{info_extra['valor']}</div>
+            <div style="font-size:11px; color:#666; margin-top:2px;">{info_extra['subtexto']}</div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -425,7 +462,7 @@ elif st.session_state.get("df") is not None:
                 estado_flujo = "📉 Recesión (Descendiendo)"
                 color_flujo = "#1565C0"
             else:
-                estado_flujo = "➡️ Estable (Sin variaciones)"
+                estado_flujo = "➡️ Estable"
                 color_flujo = "#2E7D32"
             var_texto = f"{diferencia:+.1f} cm respecto a lectura previa"
         else:
@@ -433,13 +470,13 @@ elif st.session_state.get("df") is not None:
             color_flujo = "#2E7D32"
             var_texto = "Sin suficientes datos"
 
-        # Tarjeta 3: Comportamiento Reciente
+        # Tarjeta 4: Comportamiento Reciente
         st.markdown(
             f"""
-        <div style="background-color: #FFFFFF; border: 1px solid #E0E7E1; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-            <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#555; font-weight:600;">Comportamiento Reciente</div>
-            <div style="font-size:15px; font-weight:bold; color:{color_flujo}; margin-top:5px;">{estado_flujo}</div>
-            <div style="font-size:11px; color:#777; margin-top:3px;">{var_texto}</div>
+        <div style="background-color: #FFFFFF; border: 1px solid #E0E7E1; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#555; font-weight:600;">Tendencia Actual</div>
+            <div style="font-size:14px; font-weight:bold; color:{color_flujo}; margin-top:3px;">{estado_flujo}</div>
+            <div style="font-size:10px; color:#777; margin-top:2px;">{var_texto}</div>
         </div>
         """,
             unsafe_allow_html=True,
