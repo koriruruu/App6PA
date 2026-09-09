@@ -197,10 +197,10 @@ elif st.session_state.get("df") is not None:
         st.caption("Guarne, Quebrada La Brizuela (Red Agua - Cód. 9)")
 
     lista_imagenes = [
-        "imagenes/img1.jpg",
-        "imagenes/img2.jpg",
-        "imagenes/img3.jpg",
-        "imagenes/img4.jpg",
+        "imagenes/img1.png",
+        "imagenes/img2.png",
+        "imagenes/img3.png",
+        "imagenes/img4.png",
     ]
 
     if "img_idx" not in st.session_state:
