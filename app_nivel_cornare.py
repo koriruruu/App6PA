@@ -123,8 +123,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Funciones de consulta
+# Funciones de consulta optimizadas con Caché
 # ------------------------------------------------------------------
+@st.cache_data(ttl=300, show_spinner=False)
 def obtener_serie_nivel(codigo_estacion, desde, hasta, calidad=1, timeout=30):
     url = f"{API_BASE_URL}/{codigo_estacion}/nivel"
     params = {"desde": desde, "hasta": hasta, "calidad": calidad}
@@ -141,7 +142,10 @@ def obtener_serie_nivel(codigo_estacion, desde, hasta, calidad=1, timeout=30):
         return None, f"Error de red: {e}"
 
 
+@st.cache_data(ttl=300, show_spinner=False)
 def obtener_todas_las_paginas(datos_json, timeout=30):
+    if not isinstance(datos_json, dict):
+        return []
     registros = list(datos_json.get("values", []))
     siguiente_url = datos_json.get("next")
     while siguiente_url:
@@ -173,7 +177,7 @@ def detectar_coordenadas(datos_json):
 
 
 def calcular_indice_calidad(df):
-    if df.empty or len(df) < 2:
+    if df is None or df.empty or len(df) < 2:
         return 0.0, 0, 0
 
     df_idx = df.set_index("fecha")
@@ -242,6 +246,15 @@ def obtener_interpretacion_humana(nivel):
 
 
 def obtener_alerta_o_curiosidad(df, UMBRAL_ALERTA=80.0):
+    if df is None or df.empty:
+        return {
+            "titulo": "💡 Dato Curioso de la Cuenca",
+            "valor": "Sin Registros",
+            "subtexto": "La quebrada La Brizuela es un afluente clave del río Negro en Guarne.",
+            "color_borde": "#2E7D32",
+            "color_texto": "#1E4D2B"
+        }
+
     df_alertas = df[df["nivel"] >= UMBRAL_ALERTA]
     
     if not df_alertas.empty:
@@ -328,17 +341,21 @@ if consultar:
                 df["nivel"] = pd.to_numeric(df["nivel"], errors="coerce")
                 df = df.dropna(subset=["fecha", "nivel"]).sort_values("fecha").reset_index(drop=True)
 
-                lat, lon, coords_reales = detectar_coordenadas(datos_crudos)
-                indice_calidad, huecos, n_outliers = calcular_indice_calidad(df)
+                if df.empty:
+                    st.session_state["error"] = "Los datos devueltos no contienen lecturas válidas."
+                    st.session_state["df"] = None
+                else:
+                    lat, lon, coords_reales = detectar_coordenadas(datos_crudos)
+                    indice_calidad, huecos, n_outliers = calcular_indice_calidad(df)
 
-                st.session_state["df"] = df
-                st.session_state["lat"] = lat
-                st.session_state["lon"] = lon
-                st.session_state["coords_reales"] = coords_reales
-                st.session_state["indice_calidad"] = indice_calidad
-                st.session_state["huecos"] = huecos
-                st.session_state["n_outliers"] = n_outliers
-                st.session_state["error"] = None
+                    st.session_state["df"] = df
+                    st.session_state["lat"] = lat
+                    st.session_state["lon"] = lon
+                    st.session_state["coords_reales"] = coords_reales
+                    st.session_state["indice_calidad"] = indice_calidad
+                    st.session_state["huecos"] = huecos
+                    st.session_state["n_outliers"] = n_outliers
+                    st.session_state["error"] = None
 
 # ------------------------------------------------------------------
 # Renderizado Dashboard principal
@@ -346,7 +363,7 @@ if consultar:
 if st.session_state.get("error"):
     st.error(f"❌ {st.session_state['error']}")
 
-elif st.session_state.get("df") is not None:
+elif st.session_state.get("df") is not None and not st.session_state["df"].empty:
     df = st.session_state["df"]
     lat = st.session_state["lat"]
     lon = st.session_state["lon"]
@@ -439,7 +456,7 @@ elif st.session_state.get("df") is not None:
             unsafe_allow_html=True,
         )
 
-        # Tarjeta 3: Nueva Tarjeta Dinámica (Alerta Máxima / Dato Curioso)
+        # Tarjeta 3: Tarjeta Dinámica
         info_extra = obtener_alerta_o_curiosidad(df)
         st.markdown(
             f"""
@@ -510,6 +527,10 @@ elif st.session_state.get("df") is not None:
             annotation_text="Alerta Crítica", annotation_position="top left"
         )
 
+        # Líneas de umbral discontinuas (Marcadores visuales)
+        fig_line.add_hline(y=50, line_dash="dash", line_color="#FBC02D", line_width=1.5)
+        fig_line.add_hline(y=80, line_dash="dash", line_color="#D32F2F", line_width=1.5)
+
         # Serie Temporal
         fig_line.add_trace(go.Scatter(
             x=df["fecha"], y=df["nivel"], mode="lines", name="Nivel (cm)",
@@ -546,7 +567,7 @@ elif st.session_state.get("df") is not None:
         fig_gauge.update_layout(margin=dict(l=15, r=15, t=30, b=0), height=220, template="plotly_white")
         st.plotly_chart(fig_gauge, use_container_width=True)
 
-        # Interpretación Unificada debajo del tacómetro
+        # Interpretación Unificada
         texto_humano, color_humano = obtener_interpretacion_humana(nivel_actual)
         st.markdown(
             f"""
