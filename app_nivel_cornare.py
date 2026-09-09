@@ -483,7 +483,7 @@ elif st.session_state.get("df") is not None:
         )
 
     # ------------------------------------------------------------------
-    # Fila Secundaria: Gráficos y Métricas Unificadas (Sin Redundancia)
+    # Fila Secundaria: Gráficos y Métricas Unificadas
     # ------------------------------------------------------------------
     st.markdown("### 📊 Monitoreo Detallado del Nivel de Agua")
 
@@ -581,9 +581,7 @@ elif st.session_state.get("df") is not None:
             mime="text/csv",
         )
 
-else:
-    st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
-# ------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Sección de Recomendaciones y Gestión del Riesgo
     # ------------------------------------------------------------------
     st.markdown("### 🚨 ¿Qué hacer en caso de Alerta o Creciente?")
@@ -624,8 +622,12 @@ else:
         * 🌿 **CORNARE (Línea de Atención Ambiental):** `01 8000 414214`
         * 🚑 **Línea Única de Emergencias:** `123`
         """)
+
+else:
+    st.info("Selecciona el rango de fechas en la parte superior y haz clic en **Consultar Estación**.")
+
 # ------------------------------------------------------------------
-# Pie de Página Institucional 
+# Pie de Página Institucional (SIEMPRE VISIBLE AL FINAL)
 # ------------------------------------------------------------------
 st.markdown("---")
 
