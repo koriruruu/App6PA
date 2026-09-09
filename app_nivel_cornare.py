@@ -103,6 +103,30 @@ st.markdown("""
         font-weight: bold;
         color: #A5D6A7;
     }
+    /* Contenedor unificado para la barra de búsqueda */
+    .search-box-container {
+        background-color: #FFFFFF;
+        padding: 18px 22px;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        border: 1px solid #E0E7E1;
+        margin-bottom: 25px;
+    }
+
+    /* Personalización del botón primario (remueve el color rojo por defecto) */
+    div.stButton > button[kind="primary"] {
+        background-color: var(--verde-oscuro) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    div.stButton > button[kind="primary"]:hover {
+        background-color: var(--verde-principal) !important;
+        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,8 +211,8 @@ def calcular_indice_calidad(df):
 col_logo, col_titulo = st.columns([1, 4])
 
 with col_logo:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", use_container_width=True)
+    if os.path.exists("imagenes/logo.png"):
+        st.image("imagenes/logo.png", use_container_width=True)
     else:
         st.markdown("<div style='background-color:#E8F5E9; padding:20px; border-radius:8px; text-align:center; color:#1E4D2B;'><b>[Logo aquí]</b></div>", unsafe_allow_html=True)
 
@@ -206,19 +230,24 @@ with col_titulo:
     """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Barra de Filtro de Búsqueda (Estilo Web)
+# Barra de Filtro de Búsqueda (Estilo Integrado)
 # ------------------------------------------------------------------
 with st.container():
-    col_f1, col_f2 = st.columns([3, 1])
-    with col_f1:
+    st.markdown('<div class="search-box-container">', unsafe_allow_html=True)
+    
+    col_fechas, col_btn = st.columns([3.8, 1.2], vertical_alignment="bottom")
+    
+    with col_fechas:
         rango_fechas = st.date_input(
-            "Rango de Fechas para Consulta:",
+            "📅 Selecciona el Rango de Fechas para Consulta:",
             value=(pd.to_datetime("2026-08-20"), pd.to_datetime("2026-08-25")),
             format="YYYY/MM/DD",
         )
-    with col_f2:
-        st.write("##")
+        
+    with col_btn:
         consultar = st.button("🔍 Consultar Estación", type="primary", use_container_width=True)
+        
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Manejo de consulta
 if consultar:
